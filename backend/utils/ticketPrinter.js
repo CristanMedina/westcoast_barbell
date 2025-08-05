@@ -16,16 +16,23 @@ export const printTicket = async ({ userId, trainerId, amount, transactionType, 
 
     if (!company || !user || !trainer) throw new Error("Missing company, user, or trainer info");
 
-    const device = new escpos.USB();
-    const printer = new escpos.Printer(device);
-
     const logoPath = path.join(process.cwd(), "public/logo.png");
     const image = await escpos.Image.load(logoPath);
 
-    device.open(() => {
-      printer.align("CT").raster(image).newline();
+    const device = new escpos.USB();
+    const printer = new escpos.Printer(device);
+
+    device.open((error) => {
+      if (error) {
+        console.error("Error opening device:", error);
+        return;
+      }
 
       printer
+        .align("CT")
+        .raster(image)
+        .newline()
+
         .align("CT")
         .style("B")
         .size(1, 1)
@@ -36,6 +43,7 @@ export const printTicket = async ({ userId, trainerId, amount, transactionType, 
         .text(`Tel: ${company.phone}`)
         .text(company.website || "")
         .text("--------------------------------")
+
         .align("LT")
         .text(`Cliente: ${user.first_name} ${user.last_name}`)
         .text(`User ID: ${user.id}`)
@@ -48,6 +56,7 @@ export const printTicket = async ({ userId, trainerId, amount, transactionType, 
         .text(`Monto: $${amount.toFixed(2)}`)
         .text(`Total (NO IVA): $${amount.toFixed(2)}`)
         .text("--------------------------------")
+
         .align("CT")
         .text("¡Gracias por su pago!")
         .cut()
