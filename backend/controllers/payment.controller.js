@@ -1,4 +1,6 @@
 import Payment from "../models/payment.model.js";
+import User from "../models/user.model.js";
+import Trainer from "../models/trainer.model.js";
 import { printTicket } from "../utils/ticketPrinter.js";
 
 export const createPayment = async (req, res) => {
@@ -39,5 +41,24 @@ export const printPaymentTicket = async (req, res) => {
     res.json({ message: "Ticket printed" });
   } catch (error) {
     res.status(500).json({ message: "Error printing ticket", error: error.message });
+  }
+};
+
+export const getPayments = async (req, res) => {
+  try {
+    const where = req.user.role === "admin" ? {} : { user_id: req.user.id };
+
+    const payments = await Payment.findAll({
+      where,
+      include: [
+        { model: User, as: "user", attributes: ["id", "first_name", "last_name"] },
+        { model: Trainer, as: "trainer", attributes: ["id", "first_name", "last_name"] },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching payments", error: error.message });
   }
 };

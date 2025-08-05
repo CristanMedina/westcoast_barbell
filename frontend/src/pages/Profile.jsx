@@ -1,8 +1,36 @@
 import { useContext, useEffect, useState } from "react";
+import { User, Calendar, Mail, UserCheck, Dumbbell } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 
+function Avatar({ name }) {
+  const initials = name
+    ? name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "U";
+  return (
+    <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white text-3xl font-extrabold shadow-md select-none mx-auto">
+      {initials}
+    </div>
+  );
+}
+
+function InfoRow({ icon: Icon, label, children }) {
+  return (
+    <div className="flex items-center space-x-3">
+      <Icon className="w-5 h-5 text-[#56d722]" />
+      <p>
+        <span className="font-semibold text-gray-300">{label}:</span>{" "}
+        <span className="text-gray-200">{children}</span>
+      </p>
+    </div>
+  );
+}
+
 export default function Profile() {
-  const { token, logout } = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({});
@@ -61,129 +89,172 @@ export default function Profile() {
     }
   };
 
-  if (error) return <div className="text-red-500">{error}</div>;
-  if (!profile) return <div className="text-gray-300">Loading...</div>;
+  if (!profile)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#121212] text-gray-400 font-semibold">
+        Loading...
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] text-white p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <header className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Profile</h1>
-          <button
-            onClick={logout}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md"
-          >
-            Logout
-          </button>
+    <div className="min-h-screen bg-[#121212] text-white font-sans">
+      <main className="max-w-3xl mx-auto p-8">
+        <header className="flex justify-between items-center mb-10">
+          <h1 className="text-4xl font-bold text-[#56d722]">Profile</h1>
         </header>
 
-        {success && <div className="text-green-500">{success}</div>}
-        {error && <div className="text-red-400">{error}</div>}
+        <section className="bg-[#1e1e1e] rounded-2xl shadow-md p-8">
+          <Avatar name={`${profile.first_name} ${profile.last_name}`} />
+          <h2 className="text-3xl font-semibold text-center mt-4 mb-8">
+            {profile.first_name} {profile.last_name}
+          </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-[#2a2a2a] p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4">Personal Info</h2>
-            {isEditing ? (
-              <>
-                <input
-                  type="text"
-                  name="first_name"
-                  value={form.first_name || ""}
-                  onChange={handleChange}
-                  className="w-full p-2 mb-3 rounded bg-[#1a1a1a] border border-gray-700"
-                />
-                <input
-                  type="text"
-                  name="last_name"
-                  value={form.last_name || ""}
-                  onChange={handleChange}
-                  className="w-full p-2 mb-3 rounded bg-[#1a1a1a] border border-gray-700"
-                />
-                <input
-                  type="date"
-                  name="date_of_birth"
-                  value={form.date_of_birth || ""}
-                  onChange={handleChange}
-                  className="w-full p-2 mb-3 rounded bg-[#1a1a1a] border border-gray-700"
-                />
+          <div className="grid gap-10 md:grid-cols-2">
+            <div>
+              <h3 className="text-xl font-semibold mb-5 border-b border-gray-700 pb-2 text-[#56d722]">
+                Personal Info
+              </h3>
+              {isEditing ? (
+                <>
+                  <input
+                    name="first_name"
+                    value={form.first_name || ""}
+                    onChange={handleChange}
+                    placeholder="First Name"
+                    className="mb-4 w-full rounded-md p-3 bg-[#2b2b2b] text-white focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                  />
+                  <input
+                    name="last_name"
+                    value={form.last_name || ""}
+                    onChange={handleChange}
+                    placeholder="Last Name"
+                    className="mb-4 w-full rounded-md p-3 bg-[#2b2b2b] text-white focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                  />
+                  <input
+                    type="date"
+                    name="date_of_birth"
+                    value={form.date_of_birth || ""}
+                    onChange={handleChange}
+                    className="mb-4 w-full rounded-md p-3 bg-[#2b2b2b] text-white focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                  />
+                  <select
+                    name="gender"
+                    value={form.gender || "M"}
+                    onChange={handleChange}
+                    className="mb-4 w-full rounded-md p-3 bg-[#2b2b2b] text-white focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                  >
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                  </select>
+                </>
+              ) : (
+                <div className="space-y-4 text-gray-300">
+                  <InfoRow icon={User} label="Name">
+                    {profile.first_name} {profile.last_name}
+                  </InfoRow>
+                  <p>
+                    <span className="font-semibold text-gray-300">Gender:</span>{" "}
+                    <span className="text-gray-200">
+                      {profile.gender === "M" ? "Male" : "Female"}
+                    </span>
+                  </p>
+                  <InfoRow icon={Calendar} label="Date of Birth">
+                    {new Date(profile.date_of_birth).toLocaleDateString()}
+                  </InfoRow>
+                </div>
+              )}
+              <div className="mt-6 text-gray-300">
+                <InfoRow icon={Mail} label="Email">
+                  {profile.email}
+                </InfoRow>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-semibold mb-5 border-b border-gray-700 pb-2 text-[#56d722]">
+                Training Info
+              </h3>
+              {isEditing ? (
                 <select
-                  name="gender"
-                  value={form.gender || "M"}
+                  name="training_type"
+                  value={form.training_type || "strength"}
                   onChange={handleChange}
-                  className="w-full p-2 mb-3 rounded bg-[#1a1a1a] border border-gray-700"
+                  className="mb-4 w-full rounded-md p-3 bg-[#2b2b2b] text-white focus:outline-none focus:ring-2 focus:ring-[#56d722]"
                 >
-                  <option value="M">Male</option>
-                  <option value="F">Female</option>
+                  <option value="strength">Strength</option>
+                  <option value="hypertrophy">Hypertrophy</option>
+                  <option value="weight_loss">Weight Loss</option>
+                  <option value="lifestyle">Lifestyle</option>
+                  <option value="functional">Functional</option>
+                  <option value="athlete">Athlete</option>
+                  <option value="rehabilitation">Rehabilitation</option>
                 </select>
-              </>
-            ) : (
-              <>
-                <p><strong>Name:</strong> {profile.first_name} {profile.last_name}</p>
-                <p><strong>Gender:</strong> {profile.gender}</p>
-                <p><strong>Date of Birth:</strong> {profile.date_of_birth}</p>
-              </>
-            )}
-            <p className="mt-3"><strong>Email:</strong> {profile.email}</p>
+              ) : (
+                <div className="space-y-4 text-gray-300">
+                  <InfoRow icon={Dumbbell} label="Type">
+                    {profile.training_type}
+                  </InfoRow>
+                  <InfoRow icon={Calendar} label="Joined">
+                    {new Date(profile.join_date).toLocaleDateString()}
+                  </InfoRow>
+                  <InfoRow icon={UserCheck} label="Trainer">
+                    {profile.assigned_trainer
+                      ? `${profile.assigned_trainer.first_name} ${profile.assigned_trainer.last_name}`
+                      : "Not assigned"}
+                  </InfoRow>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="bg-[#2a2a2a] p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4">Training</h2>
+          <div className="flex justify-end space-x-4 mt-10">
             {isEditing ? (
-              <select
-                name="training_type"
-                value={form.training_type || "strength"}
-                onChange={handleChange}
-                className="w-full p-2 mb-3 rounded bg-[#1a1a1a] border border-gray-700"
-              >
-                <option value="strength">Strength</option>
-                <option value="hypertrophy">Hypertrophy</option>
-                <option value="weight_loss">Weight Loss</option>
-                <option value="lifestyle">Lifestyle</option>
-                <option value="functional">Functional</option>
-                <option value="athlete">Athlete</option>
-                <option value="rehabilitation">Rehabilitation</option>
-              </select>
+              <>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setForm(profile);
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  disabled={loading}
+                  className="bg-gray-700 hover:bg-gray-800 transition rounded-md px-6 py-2 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="bg-[#56d722] hover:bg-green-600 transition rounded-md px-6 py-2 font-semibold text-black"
+                >
+                  {loading ? "Saving..." : "Save Changes"}
+                </button>
+              </>
             ) : (
-              <p><strong>Type:</strong> {profile.training_type}</p>
+              <button
+                onClick={() => {
+                  setIsEditing(true);
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="bg-[#56d722] hover:bg-green-600 transition rounded-md px-6 py-2 font-semibold text-black"
+              >
+                Edit Profile
+              </button>
             )}
-            <p><strong>Joined:</strong> {profile.join_date}</p>
-            <p>
-              <strong>Trainer:</strong>{" "}
-              {profile.assigned_trainer
-                ? `${profile.assigned_trainer.first_name} ${profile.assigned_trainer.last_name}`
-                : "Not assigned"}
-            </p>
           </div>
-        </div>
 
-        <div className="flex justify-end space-x-4">
-          {isEditing ? (
-            <>
-              <button
-                onClick={() => setIsEditing(false)}
-                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-md"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="bg-[#56d722] hover:bg-green-600 px-4 py-2 rounded-md text-black"
-                disabled={loading}
-              >
-                {loading ? "Saving..." : "Save Changes"}
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="bg-[#56d722] hover:bg-green-600 px-4 py-2 rounded-md text-black"
+          {(success || error) && (
+            <div
+              className={`mt-8 rounded-md p-4 text-center font-semibold ${
+                success ? "bg-green-700 text-green-100" : "bg-red-700 text-red-100"
+              }`}
             >
-              Edit Profile
-            </button>
+              {success || error}
+            </div>
           )}
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

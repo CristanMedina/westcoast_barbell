@@ -1,13 +1,14 @@
 import escpos from "escpos";
 import escposUSB from "escpos-usb";
 import moment from "moment";
+import path from "path";
 import Company from "../models/company.model.js";
 import User from "../models/user.model.js";
 import Trainer from "../models/trainer.model.js";
 
 escpos.USB = escposUSB;
 
-/* export const printTicket = async ({ userId, trainerId, amount, transactionType, weekDay }) => {
+export const printTicket = async ({ userId, trainerId, amount, transactionType, weekDay }) => {
   try {
     const company = await Company.findOne();
     const user = await User.findByPk(userId);
@@ -18,7 +19,12 @@ escpos.USB = escposUSB;
     const device = new escpos.USB();
     const printer = new escpos.Printer(device);
 
+    const logoPath = path.join(process.cwd(), "public/logo.png");
+    const image = await escpos.Image.load(logoPath);
+
     device.open(() => {
+      printer.align("CT").raster(image).newline();
+
       printer
         .align("CT")
         .style("B")
@@ -29,9 +35,7 @@ escpos.USB = escposUSB;
         .text(`RFC: ${company.rfc}`)
         .text(`Tel: ${company.phone}`)
         .text(company.website || "")
-        .text("--------------------------------");
-
-      printer
+        .text("--------------------------------")
         .align("LT")
         .text(`Cliente: ${user.first_name} ${user.last_name}`)
         .text(`User ID: ${user.id}`)
@@ -51,38 +55,5 @@ escpos.USB = escposUSB;
     });
   } catch (error) {
     console.error("Error printing ticket:", error.message);
-  }
-};
-
-*/
-
-export const printTicket = async ({ userId, trainerId, amount, transactionType, weekDay }) => {
-  try {
-    const company = await Company.findOne();
-    const user = await User.findByPk(userId);
-    const trainer = await Trainer.findByPk(trainerId);
-
-    if (!company || !user || !trainer) throw new Error("Missing company, user, or trainer info");
-
-    console.log(`
-    ---- TICKET ----
-    ${company.name}
-    ${company.address}
-    RFC: ${company.rfc}
-    Tel: ${company.phone}
-    Website: ${company.website || "N/A"}
-    ----------------
-    Cliente: ${user.first_name} ${user.last_name} (ID: ${user.id})
-    Entrenamiento: ${user.training_type}
-    Trainer: ${trainer.first_name} ${trainer.last_name} (ID: ${trainer.id})
-    Semana/Día: ${weekDay}
-    Fecha: ${new Date().toLocaleString()}
-    Tipo de Transacción: ${transactionType}
-    Monto: $${amount.toFixed(2)}
-    Total (NO IVA): $${amount.toFixed(2)}
-    ---- END TICKET ----
-    `);
-  } catch (error) {
-    console.error("Error generating ticket:", error.message);
   }
 };
