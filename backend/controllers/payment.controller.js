@@ -27,16 +27,16 @@ export const createPayment = async (req, res) => {
 
 export const printPaymentTicket = async (req, res) => {
   try {
-    const payment = await Payment.findByPk(req.params.id);
+    const payment = await Payment.findByPk(req.params.id, {
+      include: [
+        { model: User, as: "user" },
+        { model: Trainer, as: "trainer" }
+      ]
+    });
+
     if (!payment) return res.status(404).json({ message: "Payment not found" });
 
-    await printTicket({
-      userId: payment.user_id,
-      trainerId: payment.trainer_id,
-      amount: payment.amount,
-      transactionType: payment.transaction_type,
-      weekDay: payment.week_day,
-    });
+    await printTicket(payment);
 
     res.json({ message: "Ticket printed" });
   } catch (error) {

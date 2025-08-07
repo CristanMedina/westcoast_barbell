@@ -1,68 +1,142 @@
-import escpos from "escpos";
-import escposUSB from "escpos-usb";
-import moment from "moment";
+import PDFDocument from "pdfkit";
+import fs from "fs";
 import path from "path";
 import Company from "../models/company.model.js";
-import User from "../models/user.model.js";
-import Trainer from "../models/trainer.model.js";
 
-escpos.USB = escposUSB;
+import pkg from "pdf-to-printer";
+const { print: pdfPrint } = pkg;
 
-export const printTicket = async ({ userId, trainerId, amount, transactionType, weekDay }) => {
-  try {
-    const company = await Company.findOne();
-    const user = await User.findByPk(userId);
-    const trainer = await Trainer.findByPk(trainerId);
+const createTicketPDF = async (payment) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const company = await Company.findOne();
+      if (!company) throw new Error("Company info not found");
 
-    if (!company || !user || !trainer) throw new Error("Missing company, user, or trainer info");
-
-    const logoPath = path.join(process.cwd(), "public/logo.png");
-    const image = await escpos.Image.load(logoPath);
-
-    const device = new escpos.USB();
-    const printer = new escpos.Printer(device);
-
-    device.open((error) => {
-      if (error) {
-        console.error("Error opening device:", error);
-        return;
+      const tmpDir = path.join(process.cwd(), "tmp");
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir);
       }
 
-      printer
-        .align("CT")
-        .raster(image)
-        .newline()
+      // Tamaño ancho fijo, altura grande para que no corte contenido
+      const width = 288; // ~80mm
+      const height = 2000; // alto grande para que todo quepa
 
-        .align("CT")
-        .style("B")
-        .size(1, 1)
-        .text(company.name)
-        .style("NORMAL")
-        .text(company.address)
-        .text(`RFC: ${company.rfc}`)
-        .text(`Tel: ${company.phone}`)
-        .text(company.website || "")
-        .text("--------------------------------")
+      const doc = new PDFDocument({
+        size: [width, height],
+        margins: { top: 0, bottom: 10, left: 10, right: 10 },
+      });
 
-        .align("LT")
-        .text(`Cliente: ${user.first_name} ${user.last_name}`)
-        .text(`User ID: ${user.id}`)
-        .text(`Entrenamiento: ${user.training_type}`)
-        .text(`Trainer: ${trainer.first_name} ${trainer.last_name}`)
-        .text(`Trainer ID: ${trainer.id}`)
-        .text(`Semana/Día: ${weekDay}`)
-        .text(`Fecha: ${moment().format("DD/MM/YYYY HH:mm")}`)
-        .text(`Tipo de Transacción: ${transactionType}`)
-        .text(`Monto: $${amount.toFixed(2)}`)
-        .text(`Total (NO IVA): $${amount.toFixed(2)}`)
-        .text("--------------------------------")
+      const pdfPath = path.join(tmpDir, `ticket-${Date.now()}.pdf`);
+      const stream = fs.createWriteStream(pdfPath);
+      doc.pipe(stream);
 
-        .align("CT")
-        .text("¡Gracias por su pago!")
-        .cut()
-        .close();
+      let y = 0;
+
+      const logoPath = path.join(process.cwd(), "public/logo.png");
+      if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, (width - 100) / 2, y, { width: 100 });
+        y += 60;
+      }
+
+      const lineHeight = 14;
+      const textX = 10;
+
+      doc.fontSize(12).text(company.name, textX, y, { width: width - 20, align: "center" });
+      y += lineHeight;
+
+      doc.text(company.address, textX, y, { width: width - 20, align: "center" });
+      y += lineHeight;
+
+      doc.text(`RFC: ${company.rfc}`, textX, y, { width: width - 20, align: "center" });
+      y += lineHeight;
+
+      doc.text(`Tel: ${company.phone}`, textX, y, { width: width - 20, align: "center" });
+      y += lineHeight;
+
+      if (company.website) {
+        doc.text(company.website, textX, y, { width: width - 20, align: "center" });
+        y += lineHeight;
+      }
+
+      y += 6;
+
+      doc.fontSize(10);
+
+      doc.text("------------------------------------------", textX, y, { width: width - 20, align: "left" });
+      y += lineHeight;
+
+      doc.text(`Cliente: ${payment.user ? `${payment.user.first_name} ${payment.user.last_name}` : "Usuario no encontrado"}`, textX, y);
+      y += lineHeight;
+
+      doc.text(`User ID: ${payment.user ? payment.user.id : "N/A"}`, textX, y);
+      y += lineHeight;
+
+      doc.text(`Entrenamiento: ${payment.user ? payment.user.training_type : "N/A"}`, textX, y);
+      y += lineHeight;
+
+      doc.text(`Trainer: ${payment.trainer ? `${payment.trainer.first_name} ${payment.trainer.last_name}` : "Entrenador no asignado"}`, textX, y);
+      y += lineHeight;
+
+      doc.text(`Trainer ID: ${payment.trainer ? payment.trainer.id : "N/A"}`, textX, y);
+      y += lineHeight;
+
+      doc.text(`Semana/Día: ${payment.week_day}`, textX, y);
+      y += lineHeight;
+
+      doc.text(`Fecha: ${new Date().toLocaleString()}`, textX, y);
+      y += lineHeight;
+
+      doc.text(`Tipo de Transacción: ${payment.transaction_type}`, textX, y);
+      y += lineHeight;
+
+      doc.text(`Monto: $${payment.amount.toFixed(2)}`, textX, y);
+      y += lineHeight;
+
+      doc.text(`Total (NO IVA): $${payment.amount.toFixed(2)}`, textX, y);
+      y += lineHeight;
+
+      doc.text("------------------------------------------", textX, y, { width: width - 20, align: "left" });
+      y += lineHeight + 10;
+
+      doc.fontSize(12).text("¡Gracias por su pago!", textX, y, { width: width - 20, align: "center" });
+
+      doc.end();
+
+      stream.on("finish", () => resolve(pdfPath));
+      stream.on("error", (err) => reject(err));
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+export const printTicket = async (payment) => {
+  try {
+    const pdfPath = await createTicketPDF(payment);
+
+    await pdfPrint(pdfPath);
+
+    fs.unlink(pdfPath, (err) => {
+      if (err) console.warn("No se pudo borrar el archivo temporal:", pdfPath);
     });
+
+    console.log("Ticket impreso correctamente");
   } catch (error) {
-    console.error("Error printing ticket:", error.message);
+    console.error("Error imprimiendo ticket:", error.message);
+    console.log("Mostrando ticket en consola como fallback:");
+    console.log(`
+================= TICKET =================
+Cliente: ${payment.user ? `${payment.user.first_name} ${payment.user.last_name}` : "Usuario no encontrado"}
+User ID: ${payment.user ? payment.user.id : "N/A"}
+Entrenamiento: ${payment.user ? payment.user.training_type : "N/A"}
+Trainer: ${payment.trainer ? `${payment.trainer.first_name} ${payment.trainer.last_name}` : "Entrenador no asignado"}
+Trainer ID: ${payment.trainer ? payment.trainer.id : "N/A"}
+Semana/Día: ${payment.week_day}
+Fecha: ${new Date().toLocaleString()}
+Tipo de Transacción: ${payment.transaction_type}
+Monto: $${payment.amount.toFixed(2)}
+Total (NO IVA): $${payment.amount.toFixed(2)}
+==========================================
+    `);
   }
 };

@@ -14,6 +14,7 @@ export default function AdminPanel() {
   });
   const [selectedUser, setSelectedUser] = useState("");
   const [selectedTrainer, setSelectedTrainer] = useState("");
+  const [editingTrainer, setEditingTrainer] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -90,6 +91,53 @@ export default function AdminPanel() {
     }
   };
 
+  const handleDeleteTrainer = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:5000/trainers/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete trainer");
+
+      setTrainers((prev) => prev.filter((trainer) => trainer.id !== id));
+      setMessage("Trainer deleted successfully");
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleUpdateTrainer = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`http://localhost:5000/trainers/${editingTrainer.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editingTrainer),
+      });
+
+      if (!res.ok) throw new Error("Failed to update trainer");
+
+      const data = await res.json();
+
+      setTrainers((prev) =>
+        prev.map((trainer) =>
+          trainer.id === editingTrainer.id ? data.trainer : trainer
+        )
+      );
+
+      setEditingTrainer(null);
+      setMessage("Trainer updated successfully");
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white">
       <div className="max-w-5xl mx-auto p-6 space-y-10">
@@ -109,7 +157,9 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* FORMULARIOS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* CREATE TRAINER */}
           <section className="bg-[#222222] p-6 rounded-2xl shadow-md">
             <h2 className="text-2xl font-semibold mb-6 border-b border-gray-700 pb-2 text-[#56d722] flex items-center gap-2">
               <Dumbbell className="w-6 h-6" />
@@ -124,7 +174,7 @@ export default function AdminPanel() {
                 onChange={(e) =>
                   setNewTrainer({ ...newTrainer, first_name: e.target.value })
                 }
-                className="w-full p-3 rounded bg-[#2f2f2f] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                className="w-full p-3 rounded bg-[#2f2f2f] text-white"
                 required
               />
               <input
@@ -134,7 +184,7 @@ export default function AdminPanel() {
                 onChange={(e) =>
                   setNewTrainer({ ...newTrainer, last_name: e.target.value })
                 }
-                className="w-full p-3 rounded bg-[#2f2f2f] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                className="w-full p-3 rounded bg-[#2f2f2f] text-white"
                 required
               />
               <input
@@ -144,7 +194,7 @@ export default function AdminPanel() {
                 onChange={(e) =>
                   setNewTrainer({ ...newTrainer, email: e.target.value })
                 }
-                className="w-full p-3 rounded bg-[#2f2f2f] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                className="w-full p-3 rounded bg-[#2f2f2f] text-white"
                 required
               />
               <input
@@ -154,18 +204,19 @@ export default function AdminPanel() {
                 onChange={(e) =>
                   setNewTrainer({ ...newTrainer, phone: e.target.value })
                 }
-                className="w-full p-3 rounded bg-[#2f2f2f] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                className="w-full p-3 rounded bg-[#2f2f2f] text-white"
               />
               <button
                 type="submit"
-                className="w-full bg-[#56d722] hover:bg-green-600 py-3 rounded-md text-black font-semibold transition flex items-center justify-center gap-2"
+                className="w-full bg-[#56d722] hover:bg-green-600 py-3 rounded-md text-black font-semibold"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-5 h-5 inline mr-2" />
                 Create Trainer
               </button>
             </form>
           </section>
 
+          {/* ASSIGN TRAINER */}
           <section className="bg-[#222222] p-6 rounded-2xl shadow-md">
             <h2 className="text-2xl font-semibold mb-6 border-b border-gray-700 pb-2 text-[#56d722] flex items-center gap-2">
               <User className="w-6 h-6" />
@@ -176,7 +227,7 @@ export default function AdminPanel() {
               <select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full p-3 rounded bg-[#2f2f2f] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                className="w-full p-3 rounded bg-[#2f2f2f] text-white"
                 required
               >
                 <option value="">Select User</option>
@@ -190,7 +241,7 @@ export default function AdminPanel() {
               <select
                 value={selectedTrainer}
                 onChange={(e) => setSelectedTrainer(e.target.value)}
-                className="w-full p-3 rounded bg-[#2f2f2f] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                className="w-full p-3 rounded bg-[#2f2f2f] text-white"
                 required
               >
                 <option value="">Select Trainer</option>
@@ -203,14 +254,105 @@ export default function AdminPanel() {
 
               <button
                 type="submit"
-                className="w-full bg-[#56d722] hover:bg-green-600 py-3 rounded-md text-black font-semibold transition flex items-center justify-center gap-2"
+                className="w-full bg-[#56d722] hover:bg-green-600 py-3 rounded-md text-black font-semibold"
               >
-                <Check className="w-5 h-5" />
+                <Check className="w-5 h-5 inline mr-2" />
                 Assign Trainer
               </button>
             </form>
           </section>
         </div>
+
+        {/* EDIT TRAINER FORM */}
+        {editingTrainer && (
+          <form
+            onSubmit={handleUpdateTrainer}
+            className="bg-[#222222] p-6 rounded-2xl shadow-md space-y-4"
+          >
+            <h2 className="text-2xl font-semibold text-[#56d722]">Edit Trainer</h2>
+            <input
+              type="text"
+              value={editingTrainer.first_name}
+              onChange={(e) =>
+                setEditingTrainer({ ...editingTrainer, first_name: e.target.value })
+              }
+              className="w-full p-3 rounded bg-[#2f2f2f] text-white"
+            />
+            <input
+              type="text"
+              value={editingTrainer.last_name}
+              onChange={(e) =>
+                setEditingTrainer({ ...editingTrainer, last_name: e.target.value })
+              }
+              className="w-full p-3 rounded bg-[#2f2f2f] text-white"
+            />
+            <input
+              type="email"
+              value={editingTrainer.email}
+              onChange={(e) =>
+                setEditingTrainer({ ...editingTrainer, email: e.target.value })
+              }
+              className="w-full p-3 rounded bg-[#2f2f2f] text-white"
+            />
+            <input
+              type="text"
+              value={editingTrainer.phone}
+              onChange={(e) =>
+                setEditingTrainer({ ...editingTrainer, phone: e.target.value })
+              }
+              className="w-full p-3 rounded bg-[#2f2f2f] text-white"
+            />
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                className="bg-[#56d722] text-black font-semibold py-2 px-4 rounded"
+              >
+                Save Changes
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingTrainer(null)}
+                className="text-white border border-gray-500 py-2 px-4 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* TRAINER LIST */}
+        <section className="bg-[#222222] p-6 rounded-2xl shadow-md">
+          <h2 className="text-2xl font-semibold mb-4 text-[#56d722]">All Trainers</h2>
+          <ul className="space-y-4">
+            {trainers.map((trainer) => (
+              <li
+                key={trainer.id}
+                className="p-4 bg-[#2f2f2f] rounded-md flex justify-between items-center"
+              >
+                <div>
+                  <p className="font-bold">
+                    {trainer.first_name} {trainer.last_name}
+                  </p>
+                  <p className="text-sm text-gray-400">{trainer.email}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingTrainer(trainer)}
+                    className="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTrainer(trainer.id)}
+                    className="text-sm bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );

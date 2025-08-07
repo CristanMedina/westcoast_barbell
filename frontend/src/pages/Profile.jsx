@@ -1,5 +1,15 @@
 import { useContext, useEffect, useState } from "react";
-import { User, Calendar, Mail, UserCheck, Dumbbell } from "lucide-react";
+import {
+  User,
+  Calendar,
+  Mail,
+  UserCheck,
+  Dumbbell,
+  AlertTriangle,
+  HeartPulse,
+  ClipboardCheck,
+  FileText,
+} from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 
 function Avatar({ name }) {
@@ -56,8 +66,12 @@ export default function Profile() {
   }, [token]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    if (type === "checkbox") {
+      setForm((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSave = async () => {
@@ -146,6 +160,67 @@ export default function Profile() {
                     <option value="M">Male</option>
                     <option value="F">Female</option>
                   </select>
+
+                  <label className="flex items-center space-x-2 mb-4">
+                    <input
+                      type="checkbox"
+                      name="allergy"
+                      checked={form.allergy || false}
+                      onChange={handleChange}
+                    />
+                    <AlertTriangle className="w-5 h-5 text-[#56d722]" />
+                    <span>Have allergies?</span>
+                  </label>
+
+                  {form.allergy && (
+                    <div className="flex items-center space-x-3 mb-4">
+                      <AlertTriangle className="w-5 h-5 text-[#56d722]" />
+                      <input
+                        type="text"
+                        name="allergy_details"
+                        value={form.allergy_details || ""}
+                        onChange={handleChange}
+                        placeholder="Allergy details"
+                        className="w-full rounded-md p-3 bg-[#2b2b2b] text-white focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-3 mb-4">
+                    <HeartPulse className="w-5 h-5 text-[#56d722]" />
+                    <input
+                      type="text"
+                      name="illness"
+                      value={form.illness || ""}
+                      onChange={handleChange}
+                      placeholder="Illness"
+                      className="w-full rounded-md p-3 bg-[#2b2b2b] text-white focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                    />
+                  </div>
+
+                  <label className="flex items-center space-x-2 mb-4">
+                    <input
+                      type="checkbox"
+                      name="signed_rules"
+                      checked={form.signed_rules || false}
+                      onChange={handleChange}
+                    />
+                    <ClipboardCheck className="w-5 h-5 text-[#56d722]" />
+                    <span>Rules signed?</span>
+                  </label>
+
+                  <div className="flex items-center space-x-3 mb-4">
+                    <FileText className="w-5 h-5 text-[#56d722]" />
+                    <input
+                      type="text"
+                      name="observations"
+                      value={form.observations || ""}
+                      onChange={handleChange}
+                      placeholder="Observations"
+                      maxLength={100}
+                      className="w-full rounded-md p-3 bg-[#2b2b2b] text-white focus:outline-none focus:ring-2 focus:ring-[#56d722]"
+                    />
+                  </div>
                 </>
               ) : (
                 <div className="space-y-4 text-gray-300">
@@ -160,6 +235,28 @@ export default function Profile() {
                   </p>
                   <InfoRow icon={Calendar} label="Date of Birth">
                     {new Date(profile.date_of_birth).toLocaleDateString()}
+                  </InfoRow>
+
+                  <InfoRow icon={AlertTriangle} label="Allergy">
+                    {profile.allergy ? "Yes" : "No"}
+                  </InfoRow>
+
+                  {profile.allergy && (
+                    <InfoRow icon={AlertTriangle} label="Allergy Details">
+                      {profile.allergy_details}
+                    </InfoRow>
+                  )}
+
+                  <InfoRow icon={HeartPulse} label="Illness">
+                    {profile.illness || "None"}
+                  </InfoRow>
+
+                  <InfoRow icon={ClipboardCheck} label="Rules Signed">
+                    {profile.signed_rules ? "Yes" : "No"}
+                  </InfoRow>
+
+                  <InfoRow icon={FileText} label="Observations">
+                    {profile.observations || "None"}
                   </InfoRow>
                 </div>
               )}

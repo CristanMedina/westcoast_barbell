@@ -32,3 +32,17 @@ export const updateTrainer = async (req, res) => {
     res.status(500).json({ message: "Error updating trainer", error: error.message });
   }
 };
+
+export const deleteTrainer = async (req, res) => {
+  try {
+    const trainer = await Trainer.findByPk(req.params.id);
+    if (!trainer) {
+      return res.status(404).json({ message: "Trainer not found" });
+    }
+
+    await trainer.destroy();
+    res.status(200).json({ message: "Trainer deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting trainer", error: error.message });
+  }
+};
